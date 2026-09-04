@@ -7,4 +7,4 @@
 .cache/
 
 build/
-build-asan/
+build-ubsan/
