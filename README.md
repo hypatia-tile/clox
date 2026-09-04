@@ -13,12 +13,17 @@ working contract.
 
 ## Building
 
-The dev shell provides clang, clang-tools, meson, ninja, pkg-config and
+The dev shell provides clang, clang-tools, lldb, meson, ninja, pkg-config and
 Criterion. With [direnv](https://direnv.net/) installed:
 
 ```sh
-direnv allow          # first time only
+cp .envrc.example .envrc
+direnv allow
 ```
+
+`.envrc` is deliberately untracked so it can carry machine-local settings;
+`.envrc.example` is the version to copy. It loads the flake and sources an
+optional `.env`, which is also untracked.
 
 Without direnv, prefix commands with `nix develop --command`.
 
