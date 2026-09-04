@@ -62,8 +62,9 @@ stated reason is worth as much as an adopted one.
 ### Build
 
 C23, clang only, meson + ninja, warnings at `warning_level=3` with `werror`.
-Two build directories: `build/` (debug) and `build-asan/`
-(`b_sanitize=address,undefined`). Tests use Criterion. See `CLAUDE.md`.
+Two build directories: `build/` (debug) and `build-ubsan/`
+(`b_sanitize=undefined`). Tests use Criterion. AddressSanitizer is unavailable
+locally — see `docs/divergences.md`. See `CLAUDE.md`.
 
 ## Steps
 
@@ -73,7 +74,7 @@ drifted by then determines where the seams fall. Chapters marked *(split
 expected)* are the candidates.
 
 - [ ] **Step 0 — Environment**
-      Nix flake dev shell, meson build, `build/` + `build-asan/`, Criterion
+      Nix flake dev shell, meson build, `build/` + `build-ubsan/`, Criterion
       wired up, clangd healthy. `src/main.c` prints `hello, clox` and nothing
       more. Goal: never fight the toolchain again after this.
 
@@ -89,7 +90,8 @@ expected)* are the candidates.
       A scanner that hands out tokens one at a time rather than building a list.
 - [ ] **Step 4 — ch17 Compiling Expressions**
       Pratt parsing straight to bytecode. **`lox` becomes a real program here**
-      — this is also where `packages.default` and CI get added.
+      — this is also where `packages.default` and CI get added. CI is where
+      AddressSanitizer finally runs, on Linux; it cannot run locally.
 
 ### A language with values
 

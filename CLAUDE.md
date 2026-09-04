@@ -68,11 +68,14 @@ Chat with the owner is in Japanese.
 ```sh
 direnv allow                 # first time only; generates flake.lock
 meson setup build            # debug
-meson setup build-asan -Db_sanitize=address,undefined
+meson setup build-ubsan -Db_sanitize=undefined
 meson compile -C build
 meson test -C build
-meson test -C build-asan
+meson test -C build-ubsan
 ```
+
+AddressSanitizer is **not** used locally. Its runtime deadlocks at init on this
+macOS — see `docs/divergences.md`. ASan runs on Linux in CI from Step 4.
 
 - C standard: **C23** (`c_std=c23`)
 - Warnings: `warning_level=3` + `werror=true` (`-Wall -Wextra -Wpedantic -Werror`)
@@ -81,7 +84,7 @@ meson test -C build-asan
   `c/` directory. Everything except `main.c` is built into an internal static
   library so both the `clox` executable and the tests can link it.
 - Tests: **Criterion**, via `dependency('criterion')`
-- clangd reads `build/` — see `.clangd`. Never point it at `build-asan/`; the
+- clangd reads `build/` — see `.clangd`. Never point it at `build-ubsan/`; the
   sanitizer flags skew the diagnostics.
 
 ## How the book is followed

@@ -29,10 +29,10 @@ Without direnv, prefix commands with `nix develop --command`.
 
 ```sh
 meson setup build                                    # debug
-meson setup build-asan -Db_sanitize=address,undefined
+meson setup build-ubsan -Db_sanitize=undefined
 meson compile -C build
 meson test -C build
-meson test -C build-asan                             # the same tests, instrumented
+meson test -C build-ubsan                            # the same tests, instrumented
 ./build/clox                                         # REPL (from ch16 onward)
 ./build/clox script.lox
 ```
