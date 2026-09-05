@@ -26,7 +26,6 @@
 
             clang
             clang-tools
-            lldb
 
             criterion
 
