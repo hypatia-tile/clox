@@ -12,8 +12,15 @@ project(
 
 criterion_dep = dependency('criterion', required : true)
 
-dependencies = [
+deps = [
 ]
+
+clox_static_lib = static_library(
+  'clox_static_lib',
+  'src/opcode.c',
+  include_directories : ['src'],
+  dependencies : deps
+)
 
 sources = [
   'src/main.c',
@@ -21,17 +28,19 @@ sources = [
 
 exe = executable(
   'clox',
-  sources,
-  dependencies : dependencies,
-  install : true,
+  'src/main.c',
+  link_with : clox_static_lib
 )
 
 test_sources = [
-  'src/main.c',
+  'test/test_opcode.c',
 ]
+
 test_exe = executable(
   'clox_test',
   test_sources,
+  include_directories : ['src', 'test'],
+  link_with : clox_static_lib,
   dependencies  : [criterion_dep],
 )
 

@@ -49,6 +49,24 @@ hint fails.
 contract). In this repository that section is **`docs/roadmap.md` § Working
 Contract**.
 
+### Issues are kept readable, by superseding
+
+An issue must be workable by reading its body alone. Once corrections in the
+comments contradict the body, it has stopped being instructions and become an
+archive.
+
+When intent changes that far, **supersede rather than edit**: agree the split
+with the owner first, open the replacement issues, then close the original with
+a comment naming them and stating what was achieved under it. Editing the body
+in place would erase what was originally believed, which is often the most
+useful thing on the page.
+
+A step may therefore span several issues. `docs/roadmap.md` names which ones
+close it.
+
+One issue, one concern. Environment setup, a code-review finding, and a new
+design all belong in separate issues even when they surfaced in the same hour.
+
 ## Language
 
 **Everything committed to this repository, and everything posted to GitHub, is

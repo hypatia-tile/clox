@@ -73,10 +73,13 @@ immediately before entering that chapter**, not now — how far the code has
 drifted by then determines where the seams fall. Chapters marked *(split
 expected)* are the candidates.
 
-- [ ] **Step 0 — Environment**
+- [ ] **Step 0 — Environment** *(issues #3, #4; originally #1, superseded)*
       Nix flake dev shell, meson build, `build/` + `build-ubsan/`, Criterion
       wired up, clangd healthy. `src/main.c` prints `hello, clox` and nothing
       more. Goal: never fight the toolchain again after this.
+
+      Two things grew out of this step without being conditions of it: an
+      assertion utility (#5) and housekeeping (#6).
 
 ### Getting to a running interpreter
 
