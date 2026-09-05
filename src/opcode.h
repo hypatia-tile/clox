@@ -7,6 +7,6 @@ typedef enum : uint8_t {
   OP_RETURN,
 } Opcode;
 
-char* opcodeName(Opcode instruction);
+char *opcodeName(Opcode instruction);
 
 #endif // clox_opcode_h
