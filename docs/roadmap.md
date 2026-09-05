@@ -16,6 +16,11 @@ implementation, and implementation belongs to the owner.
 issue specs, review comments, **and commit messages** — Claude also executes
 `git commit` and `git push`, so the owner never has to stop and phrase a commit.
 
+**One exception on each side.** `scripts/agents/` is Claude's: the checks it runs
+repeatedly, written and maintained by Claude, reviewed by the owner when they
+care to. `scripts/` is the owner's, and Claude reviews it like any other code.
+See `CLAUDE.md` for where the line falls.
+
 **One step at a time.**
 
 1. `step-start` files the next unchecked step below as a GitHub issue with a full

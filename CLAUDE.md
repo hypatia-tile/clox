@@ -16,8 +16,27 @@ purpose.
 
 | Who | What |
 | --- | --- |
-| **The owner** | All code. `flake.nix`, `meson.build`, `src/`, `test/`, `.clang-format` — everything that is not documentation. |
-| **Claude** | `docs/`, `README.md`, this file, GitHub issue specs, reviews, **and commit messages**. Claude also *executes* `git commit` and `git push`. |
+| **The owner** | All code. `flake.nix`, `meson.build`, `src/`, `test/`, `.clang-format`, `scripts/` — everything that is not documentation, with one exception below. |
+| **Claude** | `docs/`, `README.md`, this file, **`scripts/agents/`**, GitHub issue specs, reviews, **and commit messages**. Claude also *executes* `git commit` and `git push`. |
+
+### `scripts/` and `scripts/agents/`
+
+`scripts/` belongs to the owner; Claude reviews it like any other code and never
+edits it.
+
+`scripts/agents/` belongs to Claude: the checks it runs over and over. The owner
+reviews these and weighs in, but does not maintain them.
+
+The line between them is **what the output is for**:
+
+- **`scripts/agents/`** is read by a machine. Terse output, and an exit code that
+  means something — Claude acts on pass/fail.
+- **`scripts/`** is read by a person. Legible output matters; the exit code is
+  secondary.
+
+One rule for both, learned the hard way when a script named `fmt_check.sh` ran
+`clang-format -i` and silently rewrote the tree: **a check never modifies
+files.** If it can edit, its name says so.
 
 **Claude never writes code.** Not a snippet, not a "here's roughly what it looks
 like", not a fix applied to the working tree. Naming a function, a struct field,
