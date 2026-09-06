@@ -6,4 +6,4 @@ static char *mnemonic[] = {
 
 // Add assertion to catch cases where values outside the mnemonic's range are
 // passed.
-char *opcodeName(Opcode instruction) { return mnemonic[instruction]; }
+const char *opcodeName(Opcode instruction) { return mnemonic[instruction]; }
