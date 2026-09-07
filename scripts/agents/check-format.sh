@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 # Is the tree formatted? Reports only; never edits.
 #
-# Covers test/ as well as src/ -- the owner's scripts/fmt*.sh look only at
-# src/*.{c,h}, which is why test/test_opcode.c stayed unformatted.
+# nullglob makes an unmatched pattern vanish rather than being passed through
+# as a literal filename -- test/ has no headers yet, and without this
+# `clang-format test/*.h` would fail trying to open a file called "test/*.h".
+# The empty guard then covers the case where nothing matches at all, since
+# clang-format with no arguments reads stdin and hangs.
 set -euo pipefail
+shopt -s nullglob
 
-files=$(ls src/*.c src/*.h test/*.c 2>/dev/null || true)
-[ -z "$files" ] && { echo "ok: nothing to format"; exit 0; }
+files=(src/*.c src/*.h test/*.c test/*.h)
 
-# shellcheck disable=SC2086
-if out=$(clang-format --dry-run --Werror $files 2>&1); then
-  echo "ok: $(wc -w <<<"$files" | tr -d ' ') files formatted"
+if [ ${#files[@]} -eq 0 ]; then
+  echo "ok: no sources to format"
+  exit 0
+fi
+
+if out=$(clang-format --dry-run --Werror "${files[@]}" 2>&1); then
+  echo "ok: ${#files[@]} files formatted"
 else
   echo "FAIL: formatting violations"
   grep 'error:' <<<"$out" | sed 's/^/       /'

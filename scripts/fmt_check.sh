@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-clang-format --Werror src/*.{c,h}
+clang-format --dry-run --Werror {src,test}/*
