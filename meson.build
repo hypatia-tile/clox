@@ -10,19 +10,19 @@ project(
   ],
 )
 
-add_project_arguments('-Wwrite-strings', language : ['c', 'cpp'])
-
-criterion_dep = dependency('criterion', required : true)
-
-deps = [
-]
+add_project_arguments('-Wwrite-strings', language : ['c'])
 
 clox_static_lib = static_library(
   'clox_static_lib',
   'src/opcode.c',
-  include_directories : ['src'],
-  dependencies : deps
 )
+
+clox_dep = declare_dependency(
+  link_with : clox_static_lib,
+  include_directories : ['src'],
+)
+
+criterion_dep = dependency('criterion', required : true)
 
 sources = [
   'src/main.c',
@@ -30,8 +30,8 @@ sources = [
 
 exe = executable(
   'clox',
-  'src/main.c',
-  link_with : clox_static_lib,
+  sources,
+  dependencies : [clox_dep],
 )
 
 test_sources = [
@@ -41,9 +41,10 @@ test_sources = [
 test_exe = executable(
   'clox_test',
   test_sources,
-  include_directories : ['src', 'test'],
-  link_with : clox_static_lib,
-  dependencies  : [criterion_dep],
+  dependencies  : [
+    clox_dep,
+    criterion_dep
+  ],
 )
 
 test('basic', test_exe)
