@@ -1,6 +1,6 @@
 #include "opcode.h"
 
-static char *mnemonic[] = {
+static const char *mnemonic[] = {
     [OP_RETURN] = "OP_RETURN",
 };
 
