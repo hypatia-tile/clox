@@ -1,3 +1,13 @@
 #!/usr/bin/env bash
 
-clang-format --dry-run --Werror {src,test}/*
+set -euo pipefail
+shopt -s nullglob
+
+files=(src/*.c src/*.h test/*.c test/*.h)
+
+if [ ${#files[@]} -eq 0 ]; then
+  echo "ok: no source to format"
+  exit 0
+fi
+
+clang-format --dry-run --Werror "${files[@]}" 2>&1
