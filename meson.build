@@ -10,6 +10,8 @@ project(
   ],
 )
 
+add_project_arguments('-Wwrite-strings', language : ['c', 'cpp'])
+
 criterion_dep = dependency('criterion', required : true)
 
 deps = [
@@ -29,7 +31,7 @@ sources = [
 exe = executable(
   'clox',
   'src/main.c',
-  link_with : clox_static_lib
+  link_with : clox_static_lib,
 )
 
 test_sources = [
