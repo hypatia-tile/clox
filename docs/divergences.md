@@ -80,3 +80,61 @@ build, so that no build directory depends on the host toolchain.
 `get_dyld_hdr()` and this entry can be retired.
 
 Full investigation: issue #2.
+
+### D-002 — `OpCode` lives in its own translation unit
+
+| | |
+| --- | --- |
+| **Introduced** | Step 0 |
+| **The book** | `OpCode` is declared in `chunk.h`, and `disassembleInstruction` prints each mnemonic from inside its own `switch`. There is no separate opcode file and no function that maps an opcode to its name. |
+| **Here** | `src/opcode.{c,h}` holds the enum and `opcodeName`, a pure function returning the mnemonic. |
+| **Why** | Two reasons, one structural and one incidental. |
+| **Blast radius** | ch14's disassembler, which will call `opcodeName` instead of printing inline. Every later chapter that adds an opcode touches `opcode.c` rather than `chunk.h`. |
+
+The structural reason: the book's mnemonic lookup is not really part of
+disassembly, it is a fact about opcodes that disassembly happens to be the
+first caller of. Extracted, it becomes a total function from opcode to string —
+something that can be tested directly, which the `switch` inside a printing
+routine cannot be without capturing stdout.
+
+The incidental reason is worth recording because it shaped the choice: at Step 0
+the static library had no sources at all, `main.c` being the only file. meson
+accepts a library with no sources but warns that it works by accident and will
+stop being allowed. Something real had to go in, and inventing a version string
+would have been scaffolding thrown away by ch14. An opcode table is the first
+thing ch14 needs anyway.
+
+The contract for values that are not opcodes is **not yet decided** — see #7.
+
+### D-003 — `-Wwrite-strings` is enabled project-wide
+
+| | |
+| --- | --- |
+| **Introduced** | Step 0 |
+| **The book** | Written against a C99-era dialect with ordinary warnings. String literals are assigned to `char *` where convenient. |
+| **Here** | `add_project_arguments('-Wwrite-strings', …)`, so string literals type as `const char[N]` and assigning one to `char *` is an error under `werror`. |
+| **Why** | The type system otherwise declines to defend what the standard forbids. |
+| **Blast radius** | **Expect the book's code to stop compiling at intervals.** The disassembler in ch14, the token strings in ch16, the string object in ch19, and the error messages from ch21 onward are the likely places. |
+
+In C a string literal has type `char[N]`, not `const char[N]`, so
+`char *p = "literal";` is well typed and no diagnostic is owed — yet writing
+through `p` is undefined behaviour. `const` arrived in C89, by which time too
+much code already did this for the type to be changed; the committee left the
+type alone and made modification undefined instead. C++, having no such legacy,
+types literals `const` and rejects the line outright.
+
+`-Wwrite-strings` restores that missing `const`. This is why the diagnostic it
+produces is `-Wincompatible-pointer-types-discards-qualifiers` and never names
+the flag: nothing new is being detected, the operand merely stopped
+misrepresenting itself.
+
+**When the book's code fails to compile under this, that is the divergence
+working, not a transcription error.** The fix is nearly always to add `const`
+to the receiving type. Record anything more interesting than that here.
+
+One caveat for later: `add_project_arguments` applies to every target in the
+project. An earlier attempt used per-target `c_args` and missed the static
+library entirely — silently, since a flag that never arrives produces no
+diagnostic. If sanitizer or dependency-specific builds are added later and
+something needs exempting, exempt it explicitly rather than reverting to
+per-target flags.

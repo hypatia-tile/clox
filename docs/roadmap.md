@@ -78,7 +78,7 @@ immediately before entering that chapter**, not now — how far the code has
 drifted by then determines where the seams fall. Chapters marked *(split
 expected)* are the candidates.
 
-- [ ] **Step 0 — Environment** *(issues #3, #4; originally #1, superseded)*
+- [x] **Step 0 — Environment** *(issues #3, #4; originally #1, superseded)*
       Nix flake dev shell, meson build, `build/` + `build-ubsan/`, Criterion
       wired up, clangd healthy. `src/main.c` prints `hello, clox` and nothing
       more. Goal: never fight the toolchain again after this.
@@ -150,4 +150,16 @@ expected)* are the candidates.
 
 ## Progress
 
-Nothing started yet.
+**Step 0 complete.** A pinned Nix toolchain, meson at C23 with
+`warning_level=3`, `werror` and `-Wwrite-strings`, two build directories, a
+static library proven to link from both the executable and a real Criterion
+test, clangd verified to read the compilation database, and a committed
+formatting style.
+
+Three divergences recorded: D-001 (no local AddressSanitizer), D-002 (opcode in
+its own translation unit), D-003 (`-Wwrite-strings`).
+
+Open and not conditions of any step: #6 housekeeping, #7 the unknown-value
+contract and the assertion utility. **#7 should be settled before ch14** — its
+answer decides what `opcodeName` does with a byte that is not an opcode, and
+ch14's disassembler is the first caller that will hand it one.
