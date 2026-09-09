@@ -36,6 +36,7 @@ exe = executable(
 
 test_sources = [
   'test/test_opcode.c',
+  'test/test_check.c',
 ]
 
 test_exe = executable(
