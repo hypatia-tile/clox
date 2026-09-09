@@ -9,11 +9,11 @@ Test(check_macros, test_check_fail, .signal = SIGABRT) {
 }
 
 Test(check_macros, test_check_fail__arg, .signal = SIGABRT) {
-  CHECK(false, "Assertion failed: %s", "Expect true");
+  CHECK(false, "Expect %s", "true");
 }
 
 Test(check_macros, test_check_pass) { CHECK(true, "No argument"); }
 
 Test(check_macros, test_check_pass_arg) {
-  CHECK(true, "Assertion failed: %s", "Expect true");
+  CHECK(true, "Expect %s", "true");
 }
