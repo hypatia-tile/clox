@@ -14,6 +14,15 @@
     abort();                                                                   \
   } while (false)
 
-#define CHECK()
+#define CHECK(cond, fmt, ...)                                                  \
+  do {                                                                         \
+    if (!(cond)) {                                                             \
+      fprintf(stderr,                                                          \
+              "Assertion failed: " fmt "\n    at %s:%d"                        \
+              "\n    in %s\n" __VA_OPT__(, ) __VA_ARGS__,                      \
+              __FILE__, __LINE__, __func__);                                   \
+      abort();                                                                 \
+    }                                                                          \
+  } while (false)
 
 #endif // clox_check_h
