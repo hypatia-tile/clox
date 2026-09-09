@@ -14,6 +14,4 @@ Test(check_macros, test_check_fail__arg, .signal = SIGABRT) {
 
 Test(check_macros, test_check_pass) { CHECK(true, "No argument"); }
 
-Test(check_macros, test_check_pass_arg) {
-  CHECK(true, "Expect %s", "true");
-}
+Test(check_macros, test_check_pass_arg) { CHECK(true, "Expect %s", "true"); }
