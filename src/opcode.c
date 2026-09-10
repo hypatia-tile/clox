@@ -1,9 +1,10 @@
 #include "opcode.h"
+#include "check.h"
 
-static const char *mnemonic[] = {
-    [OP_RETURN] = "OP_RETURN",
-};
-
-// Add assertion to catch cases where values outside the mnemonic's range are
-// passed.
-const char *opcodeName(Opcode instruction) { return mnemonic[instruction]; }
+const char *opcodeName(Opcode instruction) {
+  switch (instruction) {
+  case OP_RETURN:
+    return "OP_RETURN";
+  }
+  ABORT();
+}
