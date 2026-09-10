@@ -86,6 +86,25 @@ close it.
 One issue, one concern. Environment setup, a code-review finding, and a new
 design all belong in separate issues even when they surfaced in the same hour.
 
+### Tags
+
+**Annotated**, always — a tag here records when something was passed, and a
+lightweight tag carries no date, author or message to record it with.
+
+| Tag | Marks |
+| --- | --- |
+| `chNN` | The chapter, complete and reviewed. `ch24.1` / `ch24.2` when a chapter is split across steps. |
+| `step0` | The environment step, which corresponds to no chapter. |
+| `review/chNN-before` | The state handed over for review — what `step-review` actually read. |
+| `review/chNN-after` | The state once every must-fix finding is resolved. |
+
+The before/after pair exists so that `git diff review/chNN-before review/chNN-after`
+answers "what did the review change?" long after the issue thread has scrolled
+away. `chNN` then marks the chapter closed.
+
+Claude creates and pushes tags, as with commits. Tags are pushed explicitly
+(`git push origin <tag>`); they do not travel with a plain `git push`.
+
 ## Language
 
 **Everything committed to this repository, and everything posted to GitHub, is
