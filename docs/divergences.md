@@ -138,3 +138,43 @@ library entirely — silently, since a flag that never arrives produces no
 diagnostic. If sanitizer or dependency-specific builds are added later and
 something needs exempting, exempt it explicitly rather than reverting to
 per-target flags.
+
+### D-004 — an assertion utility, always live
+
+| | |
+| --- | --- |
+| **Introduced** | Between Step 0 and ch14 |
+| **The book** | No assertion facility. `common.h` carries `DEBUG_TRACE_EXECUTION` and friends; invariants are checked by reading. |
+| **Here** | `src/check.h` provides `CHECK(cond, fmt, ...)` and `ABORT()`. Both write to `stderr` and call `abort()`, in **every** build. |
+| **Why** | The interpreter's own bugs need to announce themselves at the point of violation rather than somewhere downstream. |
+| **Blast radius** | Anywhere the book relies on a `default:` printing a diagnostic and continuing. ch14's `disassembleInstruction` is the first. |
+
+**The line this depends on:** assertions catch the *programmer's* mistakes, never
+the *user's*. A syntax error in a Lox source file is the user's and belongs to
+the book's `runtimeError()`. A byte reaching a `switch` that cannot be an opcode
+is the programmer's and belongs here. Blur this and the interpreter aborts on
+bad input.
+
+**Neither macro respects `NDEBUG`,** and this is deliberate. The obvious design
+— compile the checks away in release — was rejected after measuring what C23's
+`unreachable()` does when reached: at `-O2` the process died with `SIGSEGV`, but
+at `-O0` it returned a null pointer, printed it, and **exited zero**. A function
+that received an impossible value and reported success is worse than any
+optimisation is worth. Behaviour identical across build types was chosen over a
+branch of speed.
+
+A trap worth remembering: `NDEBUG` has no automatic effect on a hand-written
+macro. It is an ordinary name that only `<assert.h>` inspects. Honouring it
+would have required writing `#ifdef NDEBUG`, which is deliberately not written.
+
+**`CHECK` keeps `-Wformat` working.** The message is assembled by string-literal
+concatenation, so the compiler still checks conversions against arguments
+through the macro — `CHECK(1, "%d", "a string")` does not compile. Hand-rolled
+assertion macros usually forfeit that. The variadic comma is handled by C23's
+`__VA_OPT__(,)` rather than the GNU `, ##__VA_ARGS__` extension.
+
+**`ABORT()` at the tail of a `switch` needs no `return` after it.** `abort()` is
+`_Noreturn`, so `-Wreturn-type` stays quiet. And the switch carries **no
+`default` label** on purpose: a default absorbs unhandled enumerators and
+silences `-Wswitch`, which is the warning that will catch a forgotten opcode
+somewhere among the forty that arrive before ch30.
