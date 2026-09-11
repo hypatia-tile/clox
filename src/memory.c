@@ -12,7 +12,7 @@ void *reallocate(size_t size, void *pointer,
   }
   size_t newSize;
   bool overflow = ckd_mul(&newSize, newCount, size);
-  CHECK(!overflow, "newSize must be in the range of size_t");
+  CHECK(!overflow, "cannot size %zd bytes %td -1 elements", size, newCount);
   void *result = realloc(pointer, newSize);
   if (result == NULL) {
     exit(1);
