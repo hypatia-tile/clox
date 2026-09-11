@@ -15,6 +15,7 @@ add_project_arguments('-Wwrite-strings', language : ['c'])
 clox_static_lib = static_library(
   'clox_static_lib',
   'src/opcode.c',
+  'src/memory.c',
 )
 
 clox_dep = declare_dependency(
@@ -37,6 +38,7 @@ exe = executable(
 test_sources = [
   'test/test_opcode.c',
   'test/test_check.c',
+  'test/test_memory.c',
 ]
 
 test_exe = executable(
