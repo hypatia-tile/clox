@@ -2,16 +2,20 @@
 #define clox_memory_h
 
 #include "common.h"
+#include <limits.h>
+#include <stdckdint.h>
 
-#define GROW_CAPACITY(capacity) ((capacity) < 8 ? 8 : (capacity) * 2)
+static inline bool grow_capacity(clox_count_t *newCap, clox_count_t oldCap) {
+  return oldCap < 8 ? (*newCap = 8, false) : ckd_mul(newCap, oldCap, 2);
+}
 
 #define GROW_ARRAY(type, pointer, oldCount, newCount)                          \
-  (type *)reallocate(pointer, sizeof(type) * (oldCount),                       \
-                     sizeof(type) * (newCount))
+  (type *)reallocate(sizeof(type), pointer, oldCount, newCount)
 
-#define FREE_ARRAY(type, pointer, oldCount) \
-  reallocate(pointer, sizeof(type) * (oldCount), 0)
-  
-void *reallocate(void *pointer, size_t oldSize, size_t newSize);
+#define FREE_ARRAY(type, pointer, oldCount)                                    \
+  reallocate(sizeof(type), pointer, oldCount, 0)
+
+void *reallocate(size_t size, void *pointer, clox_count_t oldCount,
+                 clox_count_t newCount);
 
 #endif // clox_memory_h
