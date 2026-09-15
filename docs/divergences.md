@@ -178,3 +178,132 @@ assertion macros usually forfeit that. The variadic comma is handled by C23's
 `default` label** on purpose: a default absorbs unhandled enumerators and
 silences `-Wswitch`, which is the warning that will catch a forgotten opcode
 somewhere among the forty that arrive before ch30.
+
+### D-005 — counts and capacities are `clox_count_t`, a signed pointer-width type
+
+| | |
+| --- | --- |
+| **Introduced** | Step 1 (ch14), `31b297b` |
+| **The book** | `int count` and `int capacity` on every dynamic array. `common.h` exists to include `<stdbool.h>`, `<stddef.h>` and `<stdint.h>`. |
+| **Here** | `common.h` declares `typedef ptrdiff_t clox_count_t` and `CLOX_COUNT_MAX` (`PTRDIFF_MAX`). `Chunk` uses it for `count` and `capacity`. |
+| **Why** | `int` is 32 bits; `size_t` is wide enough but unsigned. `ptrdiff_t` is both wide and signed. |
+| **Blast radius** | Every `printf` of a count or offset from ch14's disassembler onward: `%d` becomes `%td`. Every `int` count, capacity, offset or index the book declares on a growable structure — `ValueArray`, the VM stack, `Table`, the compiler's local and upvalue arrays. |
+
+**Why not `size_t`.** Unsigned arithmetic wraps instead of going negative, so
+`count - 1` at a count of zero is `SIZE_MAX`. Downward loops need contorted
+termination conditions, and `-1` stops working as a sentinel — which the book
+relies on from ch22, where a local's depth of `-1` means "declared but not yet
+initialised". CPython reached the same conclusion and wrote it down: PEP 353's
+`Py_ssize_t` is signed for these reasons.
+
+**Why it gave `common.h` a job.** In C23 `bool`, `true` and `false` are keywords,
+so the book's `common.h` was left with almost nothing to do. Owning the count
+type is the reason it still exists.
+
+**The cost is `%td`.** It is a cost with a safety net: `-Wformat` rejects `%d`
+against a `ptrdiff_t`, so the book's format strings fail loudly rather than
+printing garbage.
+
+### D-006 — the growth policy is a `static inline` function that reports overflow
+
+| | |
+| --- | --- |
+| **Introduced** | Step 1 (ch14), `26c587a`, reshaped in `31b297b` |
+| **The book** | `#define GROW_CAPACITY(capacity) ((capacity) < 8 ? 8 : (capacity) * 2)`, used as `capacity = GROW_CAPACITY(oldCapacity)`. |
+| **Here** | `static inline bool grow_capacity(clox_count_t *newCap, clox_count_t oldCap)` in `memory.h`. It writes the new capacity through the pointer and returns `true` if doubling overflowed, via `ckd_mul`. |
+| **Why** | Nothing about the growth policy needs a macro, and a function can return the overflow verdict alongside the result. |
+| **Blast radius** | Every chapter that grows an array: `ValueArray` (ch14), the VM stack if it is made growable, `Table` (ch20), and the GC's gray stack (ch26). Each `GROW_CAPACITY` call site becomes a call plus an overflow branch. |
+
+**Which of the book's macros stay macros, and why.** A macro is needed when the
+code must be generic over a type, or must see the caller's `__FILE__` and
+`__LINE__`. `GROW_CAPACITY` is neither: it is arithmetic on one concrete type.
+As a function it is type-checked where it is defined, visible to the debugger,
+and cannot evaluate its argument twice. `GROW_ARRAY` and `FREE_ARRAY` take a
+type as a parameter, which no function can, so they remain macros — for that
+reason, not by habit.
+
+**A macro's body is not checked until it is expanded.** A broken definition of
+`GROW_ARRAY` sat in the tree compiling cleanly because nothing invoked it yet. A
+function is checked where it is written. That is part of why the conversion was
+worth making.
+
+**`static`, not bare `inline`.** In a header, `static inline` gives each
+translation unit its own copy. Bare `inline` promises an external definition
+elsewhere and fails to link without one.
+
+**The doubling is checked, although it cannot overflow in practice.** A capacity
+past `PTRDIFF_MAX / 2` is not reachable by any Lox program. The check stayed
+because a test *can* reach it — `test/test_memory.c` passes `CLOX_COUNT_MAX` —
+and an overflow branch a test demonstrates is worth more than one argued away.
+It costs one `ckd_mul` per growth.
+
+**The return shape follows from checked arithmetic.** The result and the verdict
+cannot both come back through one return value, so the result goes through a
+pointer — the same shape `ckd_mul` itself has. The caller treats `true` as a
+programmer's mistake: `writeChunk` calls `ABORT()` (D-008).
+
+### D-007 — `reallocate` takes an element size and counts, and checks the multiplication
+
+| | |
+| --- | --- |
+| **Introduced** | Step 1 (ch14), `26c587a`, reshaped in `31b297b` and `d98aa70` |
+| **The book** | `void *reallocate(void *pointer, size_t oldSize, size_t newSize)`. `GROW_ARRAY` and `FREE_ARRAY` compute `sizeof(type) * count` themselves and pass byte sizes. |
+| **Here** | `void *reallocate(size_t size, void *pointer, clox_count_t oldCount, clox_count_t newCount)`. The macros pass `sizeof(type)` and the counts; `reallocate` computes the byte size with `ckd_mul` and fails a `CHECK` if it overflows. |
+| **Why** | The byte-size multiplication is the one place in the memory layer where overflow does real damage, and moving it into the function puts the check in exactly one place. |
+| **Blast radius** | Every direct call to `reallocate` the book writes, starting with ch19's `ALLOCATE` and `allocateObject`. They pass byte sizes; here they pass an element size and a count — for a single object, `sizeof` the object and a count of `1`. `oldCount` is still unused, and is kept for a later chapter. |
+
+**Why this multiplication and not others.** If `sizeof(type) * count` wraps, it
+produces a *smaller* byte count. `realloc` succeeds, and every write that
+follows runs off the end of the allocation: a corrupted heap with no diagnostic
+anywhere. Plain multiplication cannot detect this. `ckd_mul`, from C23's
+`<stdckdint.h>`, stores the product and returns whether it overflowed.
+
+**Where the check lives changed while it was being written.** The plan in #10
+was to guard the multiplication inside `GROW_ARRAY`. It landed in `reallocate`
+instead: the macros shrink to passing arguments, and every caller — including
+ones added in ch19 that bypass `GROW_ARRAY` — is checked without needing to
+remember to be.
+
+**Why `oldCount` survives unused.** The book's `oldSize` is unused in ch14 too,
+and is there for a later chapter's benefit. Here it becomes a count, and the
+byte size it stands for is `oldCount * size`. That product needs no check, as
+long as callers pass the count they allocated with: it is then no larger than a
+`newCount * size` that already passed one. What the later
+chapter wants from it is the subject of #8's comprehension question, and is
+deliberately not written here until that question is answered.
+
+**C23's `[[maybe_unused]]`** marks `oldCount`, in place of the traditional
+`(void)oldCount;` statement. It states the intent in the signature rather than
+in the body.
+
+### D-008 — three kinds of failure, three ways out
+
+| | |
+| --- | --- |
+| **Introduced** | Step 1 (ch14), alongside D-007 |
+| **The book** | Allocation failure calls `exit(1)`. Compile and runtime errors in Lox code go through `errorAt` (ch17) and `runtimeError` (ch18). The book has no assertion facility and does not separate the interpreter's own bugs from these. |
+| **Here** | Every failure is classified before it is handled, by whose fault it is. |
+| **Why** | Each kind needs a different exit, and blurring them either hides the interpreter's bugs or aborts on bad input. |
+| **Blast radius** | ch17 and ch18, where the user-error path arrives and the line has to be held. ch26, where allocation failure becomes interesting. Any `default:` or impossible branch the book writes. |
+
+| Kind | Example | Handling |
+| --- | --- | --- |
+| **Programmer's mistake** | a byte that cannot be an opcode; a size computation that overflowed | `CHECK` / `ABORT()` → `abort()` |
+| **User's mistake** | a syntax error in a Lox file; adding a string to a number | the book's `errorAt` / `runtimeError` |
+| **Environment failure** | out of memory | `exit()` |
+
+**Overflow is a programmer's mistake, not an out-of-memory.** A request for more
+than `SIZE_MAX` bytes is not "input too large": it is evidence that a count
+computation is broken. Sending it down the out-of-memory path would report a
+bug as an environmental accident. `CHECK` reports the location and the values;
+the out-of-memory path currently reports nothing.
+
+**Out of memory is neither of the other two.** It is not a bug, so `abort()`
+overstates it, and it is not the user's fault, so there is nothing to report
+back to them or recover to. `exit()` is also the better primitive for a
+concrete reason: it runs `atexit` handlers and flushes stdio, so output produced
+before the failure is not lost. `abort()` does neither.
+
+Today `reallocate` exits silently on out-of-memory. Saying *which* allocation
+failed, and how large it was, is #9 — deferred until ch26 or until the silence
+costs time.
