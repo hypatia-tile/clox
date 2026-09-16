@@ -88,7 +88,7 @@ expected)* are the candidates.
 
 ### Getting to a running interpreter
 
-- [ ] **Step 1 — ch14 Chunks of Bytecode**
+- [ ] **Step 1 — ch14 Chunks of Bytecode** *(issues #8 + #10 done, #11 open)*
       A `Chunk` of bytecode with a growable array behind it, a constant pool,
       line information, and a disassembler to read it back.
 - [ ] **Step 2 — ch15 A Virtual Machine**
@@ -150,6 +150,15 @@ expected)* are the candidates.
 
 ## Progress
 
+**Step 1 is in progress. The next thing to do is #11** — 14.4 the disassembler,
+then 14.5 constants, then 14.6 line information. Its body states where the code
+stands and what is left; nothing else is open against Step 1.
+
+14.2 and 14.3 have landed (`153590e..c0be52a`): `clox_count_t`, the memory
+layer, and a `Chunk` that can be written to and freed. Four divergences came out
+of it — D-005 through D-008 — and #8 and #10 closed with them recorded. #9
+(reporting *which* allocation failed) is open, deferred, and blocks nothing.
+
 **Step 0 complete.** A pinned Nix toolchain, meson at C23 with
 `warning_level=3`, `werror` and `-Wwrite-strings`, two build directories, a
 static library proven to link from both the executable and a real Criterion
@@ -159,7 +168,8 @@ formatting style.
 Three divergences recorded: D-001 (no local AddressSanitizer), D-002 (opcode in
 its own translation unit), D-003 (`-Wwrite-strings`).
 
-Open and not conditions of any step: #6 housekeeping, #7 the unknown-value
-contract and the assertion utility. **#7 should be settled before ch14** — its
-answer decides what `opcodeName` does with a byte that is not an opcode, and
-ch14's disassembler is the first caller that will hand it one.
+Two things grew out of it without being conditions of it: #6 housekeeping, and
+#7 the unknown-value contract and the assertion utility. Both are closed. #7
+settled that **the disassembler validates and the lookup assumes** — which is
+what ch14's `debug.c` has to honour, since it is the first caller that can hand
+`opcodeName` a byte that is not an opcode.
